@@ -1,0 +1,53 @@
+# .github/workflows/deploy.yml
+name: Deploy to GitHub Pages
+
+on:
+  # main 브랜치에 코드가 푸시될 때마다 실행됩니다.
+  push:
+    branches: ["main"]
+
+# Actions 실행 환경을 Node 24로 강제
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+# 저장소의 토큰 권한 설정
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# 동시 배포 방지
+concurrency:
+  group: "pages"
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: 저장소 체크아웃
+        uses: actions/checkout@v4
+
+      - name: Node.js 설정
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: 'npm'
+
+      - name: 패키지 설치
+        run: npm ci
+
+      - name: 프로젝트 빌드 (Vite)
+        run: npm run build
+
+      - name: GitHub Pages용 아티팩트 업로드
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: './dist' # Vite의 기본 빌드 결과물 폴더
+
+      - name: GitHub Pages 배포
+        id: deployment
+        uses: actions/deploy-pages@v4
